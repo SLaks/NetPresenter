@@ -90,6 +90,14 @@ namespace NetPresenter {
 				SelectCommand((ICommand)elem.DataContext);
 			} finally { isMouseSelecting = false; }
 		}
+
+		private void Window_KeyDown(object sender, KeyEventArgs e) {
+			switch (e.Key) {
+				case Key.Escape:
+					Close();
+					return;
+			}
+		}
 	}
 	//For designer support
 	class GroupSet {

@@ -7,6 +7,7 @@
 		MinWidth="30" MaxHeight="900" SizeToContent="WidthAndHeight"
 		Topmost="True" 
 		WindowStartupLocation="CenterOwner" WindowStyle="None"
+		KeyDown="Window_KeyDown"
 		Loaded="Window_Loaded" ResizeMode="NoResize">
 	<Window.Resources>
 		<np:GroupSet x:Key="groups" />
