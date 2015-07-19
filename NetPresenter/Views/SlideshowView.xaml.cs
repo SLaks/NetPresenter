@@ -26,6 +26,9 @@ namespace NetPresenter.Views {
 	public partial class SlideshowView : ViewBase {
 		readonly Orchestrator Orchestrator;
 		readonly string viewName;
+
+		readonly DispatcherTimer autoTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(45) };
+		bool hasRemoteAutoTimer;
 		public SlideshowView(Orchestrator orchestrator, string viewName, string filePath) {
 			InitializeComponent();
 			this.viewName = viewName;
@@ -41,6 +44,10 @@ namespace NetPresenter.Views {
 
 			Focusable = true;
 			MouseEnter += delegate { Focus(); };
+
+			autoTimer.Tick += delegate { NavigateBy(1); };
+
+			Unloaded += delegate { autoTimer.Stop(); };
 		}
 		public override string ViewName { get { return viewName; } }
 		readonly Storyboard HideName, ShowName;
@@ -139,11 +146,11 @@ namespace NetPresenter.Views {
 			HideName.Begin();
 			Controls.Transitioner.DoTransition(
 				ImageHost,
-				delegate {			//NewContent callback
+				delegate {          //NewContent callback
 					ImageControl.Source = image;
 					ImageHost.Child.Opacity = 1;
 				},
-				ShowName.Begin		//Completed  callback
+				ShowName.Begin      //Completed  callback
 			);
 			IsLoading = false;
 		}
@@ -202,11 +209,31 @@ namespace NetPresenter.Views {
 
 			ShowHighlight(x, y);
 		}
+
+		///<summary>Returns true if an auto-timer is known to be running in this view or any remote view.</summary>
+		///<remarks>
+		/// In principle, <see cref="hasRemoteAutoTimer"/> should be enough, but I also check the
+		/// timer instance in case something went very wrong.
+		///</remarks>
+		bool IsAnyTimerRunning { get { return autoTimer.IsEnabled || hasRemoteAutoTimer; } }
+
 		public override IEnumerable<ICommand> GetMenuCommands() {
+			yield return new ActionCommand(
+				IsAnyTimerRunning ? "Stop auto-play" : "Start auto-play",
+				() => {
+					// Send the command, which will toggle our hasRemoteAutoTimer via the ExecuteCommand handler.
+					Orchestrator.BroadcastViewCommand(InformAutoTimerCommand, !IsAnyTimerRunning);
+					// If we just turned the timer on, start the time in our local instance only, after the command callback.
+					if (IsAnyTimerRunning)
+						autoTimer.Start();
+					// If we just turned the timer off, the ExecuteCommand handler in whichever view started the
+					// timer will turn its timer off, so we don't need to do anything here.
+				}
+			);
 			yield return new ActionCommand("Start over", () => BroadcastNavigateTo(0));
 		}
 
-		const string ShowHighlightCommand = "ShowHighlight", NavigateCommand = "Navigate";
+		const string ShowHighlightCommand = "ShowHighlight", NavigateCommand = "Navigate", InformAutoTimerCommand = "InformAutoTimer";
 		public override void ExecuteCommand(string name, CommandArguments args) {
 			//If the view was set when the command was
 			//received, it won't be loaded yet.
@@ -215,6 +242,13 @@ namespace NetPresenter.Views {
 				return;
 			}
 			switch (name) {
+				case InformAutoTimerCommand:
+					hasRemoteAutoTimer = args.ReadParameter<bool>();
+					// Regardless of the setting, stop our timer. Whichever view started
+					// the timer (which may be this instance) will start its timer after
+					// broadcasting the command.
+					autoTimer.Stop();
+					break;
 				case NavigateCommand:
 					DoNavigateTo(args.ReadParameter<int>());
 					break;
