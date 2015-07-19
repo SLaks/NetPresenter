@@ -14,6 +14,11 @@ namespace NetPresenter {
 		private void Application_Startup(object sender, StartupEventArgs e) {
 			WinForms.Application.EnableVisualStyles();
 			WinForms.Application.SetCompatibleTextRenderingDefault(false);
+
+			if (!Multicaster.CheckAccess()) {
+				Dispatcher.InvokeShutdown();
+				return;
+			}
 			Orchestrator.Run(LogicalScreens);
 		}
 

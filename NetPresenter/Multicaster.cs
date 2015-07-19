@@ -9,6 +9,7 @@ using System.Windows.Threading;
 using System.Diagnostics;
 using System.IO;
 using System.Media;
+using System.Windows;
 
 namespace NetPresenter {
 	class Multicaster {
@@ -40,6 +41,50 @@ namespace NetPresenter {
 				senderSocket = null;
 				return false;
 			}
+			return true;
+		}
+
+		///<summary>Configures the computer and application to support multicast sockets.</summary>
+		///<returns>False if the current instance should terminate.</returns>
+		public static bool CheckAccess() {
+			try {
+				using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Rdm, (ProtocolType)113)) {
+					socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
+					socket.Bind(new IPEndPoint(IPAddress.Any, 0));
+					return true;
+				}
+			} catch (SocketException ex) {
+				switch (ex.SocketErrorCode) {
+					case SocketError.AccessDenied:
+						if (MessageBoxResult.Yes == MessageBox.Show("TCP Multicast (RDM) requires administrative privileges.  Would you like to restart the application as administrator?",
+																	"NetPresenter", MessageBoxButton.YesNo, MessageBoxImage.Warning)) {
+							var args = Environment.GetCommandLineArgs();
+							Process.Start(new ProcessStartInfo(args[0], string.Join(" ", args.Skip(1))) { Verb = "runas" });
+							return false;
+						}
+						return true;
+					case SocketError.SocketNotSupported:
+						return !TryEnableMulticast(ex) || CheckAccess();
+					default:
+						MessageBox.Show("An unknown error occurred while creating a socket.  Network functionality will not work.\n\n" + ex.SocketErrorCode + ": " + ex.Message,
+										"NetPresenter", MessageBoxButton.OK, MessageBoxImage.Error);
+						return true;
+				}
+			}
+		}
+
+		static bool TryEnableMulticast(SocketException ex) {
+			if (MessageBoxResult.Yes != MessageBox.Show("An error occurred while creating the socket used to communicate with instance on other computers: " + ex.Message + ".\n"
+													  + "Would you like to enable Multicast support (requires administrative privileges)?",
+														"NetPresenter", MessageBoxButton.YesNo, MessageBoxImage.Warning)) {
+				Log.Write("Not enabling multicast.  Network functionality will not work.");
+				return false;
+			}
+			Log.Write("Enabling multicast...");
+			Process.Start(new ProcessStartInfo(
+				"dism",
+				"/Online /Enable-Feature=MSMQ-Multicast /All"
+			) { Verb = "runas" }).WaitForExit();
 			return true;
 		}
 
@@ -119,11 +164,11 @@ namespace NetPresenter {
 									Log.Write("ERROR reading from receiver socket!\n" + ex);
 
 									//The other end exited
-									if (ex.ErrorCode == 10101)
-										return;//Message: Returned by WSARecv or WSARecvFrom to indicate the remote party has initiated a graceful shutdown sequence
-									else if (ex.ErrorCode == 10054)		//TODO: Investigate
-										return;		//Message: An existing connection was forcibly closed by the remote host
-									continue;		//For all other errors, read again; I want resilience
+									if (ex.SocketErrorCode == SocketError.Disconnecting)
+										return;     //Message: Returned by WSARecv or WSARecvFrom to indicate the remote party has initiated a graceful shutdown sequence
+									else if (ex.SocketErrorCode == SocketError.ConnectionReset)     //TODO: Investigate
+										return;     //Message: An existing connection was forcibly closed by the remote host
+									continue;       //For all other errors, read again; I want resilience
 								}
 
 
