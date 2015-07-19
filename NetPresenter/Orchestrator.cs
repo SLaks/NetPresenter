@@ -45,6 +45,8 @@ namespace NetPresenter {
 
 		const string SetViewCommand = "SetView";
 		void Multicaster_CommandReceived(object sender, CommandEventArgs e) {
+			if (IsOffline)
+				return;
 			Log.Write("Received " + e.Name);
 			switch (e.Name) {
 				case SetViewCommand:
@@ -70,8 +72,16 @@ namespace NetPresenter {
 
 		public ReadOnlyCollection<ViewHost> Hosts { get; private set; }
 
+		///<summary>If true, network command will be ignored, creating a standalone instance within a network.</summary>
+		public bool IsOffline { get; private set; }
+
+		public void SendCommand(string commandName, params object[] args) {
+			if (!IsOffline)
+				Multicaster.SendCommand(commandName, args);
+		}
+
 		public void SetView(ViewCommand view) {
-			Multicaster.SendCommand(SetViewCommand, view.ViewName);
+			SendCommand(SetViewCommand, view.ViewName);
 			SetLocalViews(view);
 		}
 		string currentViewName;
@@ -87,7 +97,7 @@ namespace NetPresenter {
 			JumboMenu.Show(
 				new MenuGroup(view.ViewName + " Commands", view.GetMenuCommands()),
 				new MenuGroup("Views", AvailableViews),
-				new MenuGroup("System", ExitCommand.Instance)
+				new MenuGroup("System", new ToggleOfflineCommand(this), ExitCommand.Instance)
 			);
 		}
 		class ExitCommand : ICommand {
@@ -103,12 +113,24 @@ namespace NetPresenter {
 			}
 		}
 
+		class ToggleOfflineCommand : ICommand {
+			readonly Orchestrator orchestrator;
+
+			public ToggleOfflineCommand(Orchestrator orchestrator) {
+				this.orchestrator = orchestrator;
+			}
+
+			public string Name { get { return orchestrator.IsOffline ? "Reconnect" : "Go offline"; } }
+
+			public void Execute() { orchestrator.IsOffline = !orchestrator.IsOffline; }
+		}
+
 		public void BroadcastViewCommand(string name, params object[] parameters) {
 			var broadcastParams = new object[parameters.Length + 1];
 			broadcastParams[0] = currentViewName;
 			Array.Copy(parameters, 0, broadcastParams, 1, parameters.Length);
 
-			Multicaster.SendCommand(name, broadcastParams);
+			SendCommand(name, broadcastParams);
 			foreach (var host in Hosts) {
 				host.View.ExecuteCommand(name, new LocalCommandArguments(parameters));
 			}
