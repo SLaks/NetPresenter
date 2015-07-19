@@ -1,0 +1,53 @@
+<UserControl x:Class="NetPresenter.Controls.CircleHighlight"
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+			 mc:Ignorable="d" Height="250" Width="250" RenderTransformOrigin=".5,.5">
+	<UserControl.RenderTransform>
+		<ScaleTransform x:Name="scale" />
+	</UserControl.RenderTransform>
+	<UserControl.Resources>
+		<Storyboard x:Key="Animation" Completed="Storyboard_Completed">
+			<DoubleAnimationUsingKeyFrames Storyboard.TargetName="scale" Storyboard.TargetProperty="(ScaleTransform.ScaleX)">
+				<DiscreteDoubleKeyFrame	KeyTime="00:00:00"		Value="0" />
+				<EasingDoubleKeyFrame	KeyTime="00:00:00.5"		Value="1">
+					<EasingDoubleKeyFrame.EasingFunction>
+						<SineEase EasingMode="EaseIn" />
+					</EasingDoubleKeyFrame.EasingFunction>
+				</EasingDoubleKeyFrame>
+				<EasingDoubleKeyFrame	KeyTime="00:00:02"		Value="0">
+					<EasingDoubleKeyFrame.EasingFunction>
+						<BackEase EasingMode="EaseIn" Amplitude="1" ></BackEase>
+					</EasingDoubleKeyFrame.EasingFunction>
+				</EasingDoubleKeyFrame>
+			</DoubleAnimationUsingKeyFrames>
+			<DoubleAnimationUsingKeyFrames Storyboard.TargetName="scale" Storyboard.TargetProperty="(ScaleTransform.ScaleY)">
+				<DiscreteDoubleKeyFrame	KeyTime="00:00:00"		Value="0" />
+				<EasingDoubleKeyFrame	KeyTime="00:00:00.5"		Value="1">
+					<EasingDoubleKeyFrame.EasingFunction>
+						<SineEase EasingMode="EaseIn" />
+					</EasingDoubleKeyFrame.EasingFunction>
+				</EasingDoubleKeyFrame>
+				<EasingDoubleKeyFrame	KeyTime="00:00:02"		Value="0">
+					<EasingDoubleKeyFrame.EasingFunction>
+						<BackEase EasingMode="EaseIn" Amplitude="1" ></BackEase>
+					</EasingDoubleKeyFrame.EasingFunction>
+				</EasingDoubleKeyFrame>
+			</DoubleAnimationUsingKeyFrames>
+		</Storyboard>
+	</UserControl.Resources>
+	<UserControl.Triggers>
+		<EventTrigger RoutedEvent="Loaded">
+			<BeginStoryboard Storyboard="{StaticResource Animation}" />
+		</EventTrigger>
+	</UserControl.Triggers>
+	<Ellipse StrokeThickness="20">
+		<Ellipse.Stroke>
+			<RadialGradientBrush>
+				<GradientStop Color="#BF1700FF" Offset="0.849" />
+				<GradientStop Color="#BEFFB200" Offset="1" />
+			</RadialGradientBrush>
+		</Ellipse.Stroke>
+	</Ellipse>
+</UserControl>

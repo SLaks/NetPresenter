@@ -1,0 +1,62 @@
+<Window x:Class="NetPresenter.JumboMenu"
+		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:np="clr-namespace:NetPresenter"
+
+		Title="JumboMenu" 
+		MinWidth="30" MaxHeight="900" SizeToContent="WidthAndHeight"
+		Topmost="True" 
+		WindowStartupLocation="CenterOwner" WindowStyle="None"
+		Loaded="Window_Loaded" ResizeMode="NoResize">
+	<Window.Resources>
+		<np:GroupSet x:Key="groups" />
+
+		<ControlTemplate x:Key="MenuItemControlTemplate" TargetType="TreeViewItem" >
+			<Border Name="border" Padding="0 0 20 0" Focusable="False" MouseEnter="MenuItem_MouseEnter">
+				<TextBlock Name="text" Text="{Binding Name}" FontSize="40" Margin="0 3" />
+			</Border>
+			<ControlTemplate.Triggers>
+				<Trigger Property="IsSelected" Value="True">
+					<Setter TargetName="border" Property="Background" Value="Blue" />
+					<Setter TargetName="text"	Property="Foreground" Value="White" />
+				</Trigger>
+			</ControlTemplate.Triggers>
+		</ControlTemplate>
+		<Style TargetType="TreeViewItem">
+			<Setter Property="IsExpanded" Value="True" />
+			
+			<Setter Property="Template">
+				<Setter.Value>
+					<ControlTemplate TargetType="TreeViewItem">
+						<StackPanel Orientation="Vertical">
+							<Border BorderThickness="0,0,0,1" Padding="3 0 0 0">
+								<TextBlock Text="{Binding Name}" FontSize="14" />
+								<Border.BorderBrush>
+									<LinearGradientBrush EndPoint="1,0.5" StartPoint="0,0.5">
+										<GradientStop Color="Blue" Offset="0" />
+										<GradientStop Color="White" Offset="1" />
+									</LinearGradientBrush>
+								</Border.BorderBrush>
+							</Border>
+							<ItemsPresenter Margin="20 0 0 0">
+								<ItemsPresenter.Resources>
+									<Style TargetType="TreeViewItem">
+										<Setter Property="Template" Value="{StaticResource MenuItemControlTemplate}" />
+									</Style>
+								</ItemsPresenter.Resources>
+							</ItemsPresenter>
+						</StackPanel>
+					</ControlTemplate>
+				</Setter.Value>
+			</Setter>
+		</Style>
+	</Window.Resources>
+	<Border BorderThickness="2" BorderBrush="Black">
+		<TreeView Name="tree" ItemsSource="{Binding Source={StaticResource groups}, Path=Groups}" Padding="1" 
+				  SelectedItemChanged="tree_SelectedItemChanged" PreviewMouseLeftButtonDown="tree_PreviewMouseLeftButtonDown" PreviewMouseWheel="tree_PreviewMouseWheel">
+			<TreeView.ItemTemplate>
+				<HierarchicalDataTemplate ItemsSource="{Binding}"></HierarchicalDataTemplate>
+			</TreeView.ItemTemplate>
+		</TreeView>
+	</Border>
+</Window>
