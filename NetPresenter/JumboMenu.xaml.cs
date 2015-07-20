@@ -44,7 +44,7 @@ namespace NetPresenter {
 			menuItem.Focus();
 		}
 		private void Window_Loaded(object sender, RoutedEventArgs e) {
-			var screen = App.LogicalScreens.Single(s => s.Contains(App.Cursor));
+			var screen = App.LogicalScreens.Single(s => s.Contains(App.Cursor)).ToLogicalPixels(this);
 			Left = screen.X + (screen.Width - ActualWidth) / 2;
 			Top = screen.Y + (screen.Height - ActualHeight) / 2;
 

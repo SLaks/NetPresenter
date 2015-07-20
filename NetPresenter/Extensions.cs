@@ -7,13 +7,24 @@ using WinDraw = System.Drawing;
 using WinForms = System.Windows.Forms;
 using System.Net.Sockets;
 using System.IO;
+using System.Windows.Media;
 
 namespace NetPresenter {
 	static class Extensions {
 		public static Rect ToRect(this WinDraw.Rectangle r) {
 			return new Rect(r.X, r.Y, r.Width, r.Height);
 		}
+
+		///<summary>Transforms a rectangle measured in physical pixels on the specified device to WPF logical pixels.</summary>
+		public static Rect ToLogicalPixels(this Rect rect, Visual visual) {
+			var target = PresentationSource.FromVisual(visual).CompositionTarget;
+
+			rect.Location = target.TransformFromDevice.Transform(rect.Location);
+			rect.Size = (Size)target.TransformFromDevice.Transform((Vector)rect.Size);
+			return rect;
+		}
 	}
+
 	static class SocketExtensions {
 		[ThreadStatic]
 		static byte[] buffer;
