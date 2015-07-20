@@ -30,15 +30,16 @@ namespace NetPresenter.Views {
 		}
 
 
-		///<summary>Creates an <see cref="IntroView"/> instance from background & foreground images in the specified directory, or null if no such images exist.</summary>
-		public static IntroView TryCreate(string directory) {
+		///<summary>Creates an <see cref="IntroView"/> creator function from background & foreground images in the specified directory, or null if no such images exist.</summary>
+		public static Func<IntroView> TryCreateFactory(string directory) {
+			directory = IO.Path.GetFullPath(directory);
 			if (!Directory.Exists(directory))
 				return null;
 			var foreground = TryGetImage(directory, "Foreground");
 			var background = TryGetImage(directory, "Background");
 			if (foreground == null || background == null)
 				return null;
-			return new IntroView(background, foreground);
+			return () => new IntroView(background, foreground);
 		}
 
 		static ISet<string> imageExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".png", ".jpg", ".jpeg" };

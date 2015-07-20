@@ -31,16 +31,16 @@ namespace NetPresenter {
 
 			Hosts = new ReadOnlyCollection<ViewHost>(screens.Select(s => new ViewHost(this, s)).ToArray());
 			AvailableViews = new ViewCommandCollection(new[] {
-				TryCreateSingletonCommand("Intro", Views.IntroView.TryCreate(@"Intro\")),
+				TryCreateSingletonCommand("Intro", Views.IntroView.TryCreateFactory(@"Intro\")),
 				new ViewCommand(this, "Message", o => new Views.MessageView(o))
 			}.Concat(Directory.EnumerateDirectories(Environment.CurrentDirectory)
-							  .Where(d => Directory.EnumerateFiles(d, "*.jpg").Any())
+							  .Where(d => !Path.GetFileName(d).Equals("Intro", StringComparison.OrdinalIgnoreCase) && Directory.EnumerateFiles(d, "*.jpg").Any())
 							  .Select(d => new ViewCommand(this, Path.GetFileName(d), o => new Views.SlideshowView(o, Path.GetFileName(d), d)))
 			));
 		}
 
-		ViewCommand TryCreateSingletonCommand(string name, ViewBase view) {
-			return view == null ? null : new ViewCommand(this, name, o => view);
+		ViewCommand TryCreateSingletonCommand(string name, Func<ViewBase> viewFactory) {
+			return viewFactory == null ? null : new ViewCommand(this, name, o => viewFactory());
 		}
 
 		const string SetViewCommand = "SetView";
