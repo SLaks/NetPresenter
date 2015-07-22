@@ -12,6 +12,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
+using System.Windows.Threading;
 
 namespace NetPresenter.Views {
 	/// <summary>
@@ -21,6 +22,9 @@ namespace NetPresenter.Views {
 		readonly Orchestrator orchestrator;
 		readonly string viewName;
 		readonly List<string> fileNames;
+
+		readonly DispatcherTimer trackBarTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(.1) };
+
 		public VideoView(Orchestrator orchestrator, string viewName, string directory) {
 			InitializeComponent();
 
@@ -36,13 +40,17 @@ namespace NetPresenter.Views {
 				Focus();
 				VideoIndex = 0;
 			};
+			Unloaded += delegate { IsPlaying = false; };
+
 			player.MediaOpened += delegate {
 				if (player.NaturalDuration.HasTimeSpan)
 					trackBar.Maximum = player.NaturalDuration.TimeSpan.TotalSeconds;
 			};
 			player.MediaEnded += delegate {
-				SetState(videoIndex: videoIndex - 1, position: TimeSpan.Zero, isPlaying: false);
+				SetState(videoIndex: videoIndex + 1, position: TimeSpan.Zero, isPlaying: false);
 			};
+
+			trackBarTimer.Tick += delegate { UpdateTrackBar(); };
 		}
 		public override string ViewName { get { return viewName; } }
 
@@ -50,11 +58,10 @@ namespace NetPresenter.Views {
 			".avi", ".mp4", ".wmv"
 		};
 
-		bool isPlaying;
 		public bool IsPlaying {
-			get { return isPlaying; }
+			get { return trackBarTimer.IsEnabled; }
 			set {
-				isPlaying = value;
+				trackBarTimer.IsEnabled = value;
 				if (value)
 					player.Play();
 				else
@@ -69,8 +76,10 @@ namespace NetPresenter.Views {
 				if (videoIndex == value)
 					return;
 				videoIndex = (fileNames.Count + value) % fileNames.Count;
+
 				player.Source = new Uri(fileNames[videoIndex]);
 				videoName.Content = Path.GetFileNameWithoutExtension(fileNames[videoIndex]);
+				UpdateTrackBar();
 			}
 		}
 
@@ -94,8 +103,16 @@ namespace NetPresenter.Views {
 			SetState(isPlaying: !IsPlaying);
 		}
 
+		bool isTrackBarUpdating;
+		void UpdateTrackBar() {
+			try {
+				isTrackBarUpdating = true;
+				trackBar.Value = player.Position.TotalSeconds;
+			} finally { isTrackBarUpdating = false; }
+		}
 		private void trackBar_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) {
-			SetState(position: TimeSpan.FromSeconds(e.NewValue));
+			if (!isTrackBarUpdating)
+				SetState(position: TimeSpan.FromSeconds(e.NewValue));
 		}
 		#endregion
 
