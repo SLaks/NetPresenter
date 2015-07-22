@@ -15,9 +15,17 @@
 			<RowDefinition Height="*" />
 			<RowDefinition Height="Auto" />
 		</Grid.RowDefinitions>
-		<MediaElement Name="player" Volume="1" LoadedBehavior="Manual" 
-					  Grid.RowSpan="2" UnloadedBehavior="Manual" />
-		<Slider Name="trackBar" Grid.Row="2" ValueChanged="trackBar_ValueChanged"
-				SmallChange="0.01" LargeChange="5" />
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="Auto" />
+			<ColumnDefinition Width="*" />
+		</Grid.ColumnDefinitions>
+		<MediaElement Name="player" Volume="1" LoadedBehavior="Manual"  UnloadedBehavior="Manual"
+					  Grid.RowSpan="2" Grid.ColumnSpan="2" />
+		<Label Name="videoName" BorderThickness="0 2 2 0"
+			   BorderBrush="Black"  Foreground="White" Background="#2400B600"
+			   Grid.Row="2" FontSize="24" Padding="3" Content="Hi!" />
+
+		<Slider Name="trackBar" Grid.Row="2" Grid.Column="2" ValueChanged="trackBar_ValueChanged"
+				SmallChange="0.01" LargeChange="5" VerticalAlignment="Bottom" />
 	</Grid>
 </np:ViewBase>

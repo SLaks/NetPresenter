@@ -37,7 +37,8 @@ namespace NetPresenter.Views {
 				VideoIndex = 0;
 			};
 			player.MediaOpened += delegate {
-				trackBar.Maximum = player.NaturalDuration.TimeSpan.TotalSeconds;
+				if (player.NaturalDuration.HasTimeSpan)
+					trackBar.Maximum = player.NaturalDuration.TimeSpan.TotalSeconds;
 			};
 			player.MediaEnded += delegate {
 				SetState(videoIndex: videoIndex - 1, position: TimeSpan.Zero, isPlaying: false);
@@ -69,6 +70,7 @@ namespace NetPresenter.Views {
 					return;
 				videoIndex = (fileNames.Count + value) % fileNames.Count;
 				player.Source = new Uri(fileNames[videoIndex]);
+				videoName.Content = Path.GetFileNameWithoutExtension(fileNames[videoIndex]);
 			}
 		}
 
