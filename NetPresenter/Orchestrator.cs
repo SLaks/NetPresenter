@@ -34,8 +34,19 @@ namespace NetPresenter {
 				TryCreateSingletonCommand("Intro", Views.IntroView.TryCreateFactory(@"Intro\")),
 				new ViewCommand(this, "Message", o => new Views.MessageView(o))
 			}.Concat(Directory.EnumerateDirectories(Environment.CurrentDirectory)
-							  .Where(d => !Path.GetFileName(d).Equals("Intro", StringComparison.OrdinalIgnoreCase) && Directory.EnumerateFiles(d, "*.jpg").Any())
-							  .Select(d => new ViewCommand(this, Path.GetFileName(d), o => new Views.SlideshowView(o, Path.GetFileName(d), d)))
+							  .Where(d => !Path.GetFileName(d).Equals("Intro", StringComparison.OrdinalIgnoreCase)
+										&& Directory.EnumerateFiles(d, "*.jpg").Any())
+							  .Select(d => new ViewCommand(this,
+									"Photos: " + Path.GetFileName(d),
+									o => new Views.SlideshowView(o, "Photos: " + Path.GetFileName(d), d)
+								))
+			).Concat(Directory.EnumerateDirectories(Environment.CurrentDirectory)
+							  .Where(d => Directory.EnumerateFiles(d)
+												   .Any(p => Views.VideoView.extensions.Contains(Path.GetExtension(p))))
+							  .Select(d => new ViewCommand(this,
+									"Videos: " + Path.GetFileName(d),
+									o => new Views.VideoView(o, "Photos: " + Path.GetFileName(d), d)
+								))
 			));
 		}
 
