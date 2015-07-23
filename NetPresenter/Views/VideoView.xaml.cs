@@ -25,6 +25,9 @@ namespace NetPresenter.Views {
 
 		readonly DispatcherTimer trackBarTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(.1) };
 
+		///<summary>Stores the single <see cref="VideoView"/> instance that plays sound.  At all times, exactly one instance may play sound.</summary>
+		static VideoView soundOwner;
+
 		public VideoView(Orchestrator orchestrator, string viewName, string directory) {
 			InitializeComponent();
 
@@ -37,6 +40,10 @@ namespace NetPresenter.Views {
 								 .ToList();
 
 			Loaded += delegate {
+				player.IsMuted = soundOwner != null;
+				if (soundOwner == null) 
+					soundOwner = this;
+
 				Focus();
 				VideoIndex = 0;
 
@@ -44,7 +51,11 @@ namespace NetPresenter.Views {
 				player.Play();
 				player.Pause();
 			};
-			Unloaded += delegate { IsPlaying = false; };
+			Unloaded += delegate {
+				if (soundOwner == this)
+					soundOwner = null;
+				IsPlaying = false;
+			};
 
 			player.MediaOpened += delegate {
 				if (!player.NaturalDuration.HasTimeSpan)
