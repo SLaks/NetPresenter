@@ -39,6 +39,10 @@ namespace NetPresenter.Views {
 			Loaded += delegate {
 				Focus();
 				VideoIndex = 0;
+
+				// Force the player to render a frame.
+				player.Play();
+				player.Pause();
 			};
 			Unloaded += delegate { IsPlaying = false; };
 
@@ -128,6 +132,7 @@ namespace NetPresenter.Views {
 					VideoIndex = parameters.ReadParameter<int>();
 					player.Position = TimeSpan.FromTicks(parameters.ReadParameter<long>());
 					IsPlaying = parameters.ReadParameter<bool>();
+					UpdateTrackBar();
 					break;
 				default:
 					MessageBox.Show("Unknown command: " + name);

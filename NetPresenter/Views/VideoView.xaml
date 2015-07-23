@@ -19,7 +19,8 @@
 			<ColumnDefinition Width="Auto" />
 			<ColumnDefinition Width="*" />
 		</Grid.ColumnDefinitions>
-		<MediaElement Name="player" Volume="1" LoadedBehavior="Manual"  UnloadedBehavior="Manual"
+		<MediaElement Name="player" Volume="1" 
+					  ScrubbingEnabled="True" LoadedBehavior="Manual"  UnloadedBehavior="Manual"
 					  Grid.RowSpan="2" Grid.ColumnSpan="2" />
 		<Label Name="videoName" BorderThickness="0 2 2 0"
 			   BorderBrush="Black"  Foreground="White" Background="#2400B600"
