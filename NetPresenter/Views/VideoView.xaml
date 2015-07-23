@@ -18,15 +18,27 @@
 		<Grid.ColumnDefinitions>
 			<ColumnDefinition Width="Auto" />
 			<ColumnDefinition Width="*" />
+			<ColumnDefinition Width="Auto" />
 		</Grid.ColumnDefinitions>
 		<MediaElement Name="player" Volume="1" 
 					  ScrubbingEnabled="True" LoadedBehavior="Manual"  UnloadedBehavior="Manual"
-					  Grid.RowSpan="2" Grid.ColumnSpan="2" />
+					  Grid.RowSpan="2" Grid.ColumnSpan="3" />
+
 		<Label Name="videoName" BorderThickness="0 2 2 0"
 			   BorderBrush="Black"  Foreground="White" Background="#2400B600"
-			   Grid.Row="2" FontSize="24" Padding="3" Content="Hi!" />
+			   VerticalContentAlignment="Center"
+			   Grid.Row="1" FontSize="24" Padding="5 3" Content="Hi!" />
 
-		<Slider Name="trackBar" Grid.Row="2" Grid.Column="2" ValueChanged="trackBar_ValueChanged"
+		<Slider Name="trackBar" Grid.Row="1" Grid.Column="1" ValueChanged="trackBar_ValueChanged"
 				SmallChange="0.01" LargeChange="5" VerticalAlignment="Bottom" />
+		<Border BorderThickness="2 2 0 0" BorderBrush="Black" Background="#2400B600"
+				Grid.Row="1" Grid.Column="2">
+			<StackPanel>
+				<Label Name="currentTime" Content="0:00:00" 
+					   Foreground="White" HorizontalAlignment="Right" />
+				<Label Name="duration" Content="1:00:00" 
+					   Foreground="White" HorizontalAlignment="Right" FontWeight="Bold" />
+			</StackPanel>
+		</Border>
 	</Grid>
 </np:ViewBase>

@@ -47,8 +47,10 @@ namespace NetPresenter.Views {
 			Unloaded += delegate { IsPlaying = false; };
 
 			player.MediaOpened += delegate {
-				if (player.NaturalDuration.HasTimeSpan)
-					trackBar.Maximum = player.NaturalDuration.TimeSpan.TotalSeconds;
+				if (!player.NaturalDuration.HasTimeSpan)
+					return;
+				trackBar.Maximum = player.NaturalDuration.TimeSpan.TotalSeconds;
+				duration.Content = player.NaturalDuration.TimeSpan.ToString(@"h\:mm\:ss");
 			};
 			player.MediaEnded += delegate {
 				SetState(videoIndex: videoIndex + 1, position: TimeSpan.Zero, isPlaying: false);
@@ -113,6 +115,8 @@ namespace NetPresenter.Views {
 				isTrackBarUpdating = true;
 				trackBar.Value = player.Position.TotalSeconds;
 			} finally { isTrackBarUpdating = false; }
+
+			currentTime.Content = player.Position.ToString(@"h\:mm\:ss");
 		}
 		private void trackBar_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) {
 			if (!isTrackBarUpdating)
