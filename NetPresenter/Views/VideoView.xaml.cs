@@ -67,6 +67,8 @@ namespace NetPresenter.Views {
 				SetState(videoIndex: videoIndex + 1, position: TimeSpan.Zero, isPlaying: false);
 			};
 
+			player.MediaFailed += (s, e) => MessageBox.Show(e.ErrorException.Message, "Video - NetPresenter", MessageBoxButton.OK, MessageBoxImage.Error);
+
 			trackBarTimer.Tick += delegate { UpdateTrackBar(); };
 		}
 		public override string ViewName { get { return viewName; } }
