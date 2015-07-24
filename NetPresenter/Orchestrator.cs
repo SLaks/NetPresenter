@@ -43,10 +43,7 @@ namespace NetPresenter {
 			).Concat(Directory.EnumerateDirectories(Environment.CurrentDirectory)
 							  .Where(d => Directory.EnumerateFiles(d)
 												   .Any(p => Views.VideoView.extensions.Contains(Path.GetExtension(p))))
-							  .Select(d => new ViewCommand(this,
-									"Videos: " + Path.GetFileName(d),
-									o => new Views.VideoView(o, "Photos: " + Path.GetFileName(d), d)
-								))
+							  .Select(d => Views.VideoView.CreateFactory(this, d))
 			));
 		}
 

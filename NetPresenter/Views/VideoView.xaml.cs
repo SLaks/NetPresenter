@@ -16,76 +16,52 @@ using System.Windows.Threading;
 
 namespace NetPresenter.Views {
 	/// <summary>
-	/// Interaction logic for VideoView.xaml
+	/// Base class for clone and master video views.
 	/// </summary>
-	public partial class VideoView : ViewBase {
+	public abstract partial class VideoView : ViewBase {
 		readonly Orchestrator orchestrator;
 		readonly string viewName;
-		readonly List<string> fileNames;
+		readonly IReadOnlyList<string> fileNames;
 
 		readonly DispatcherTimer trackBarTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(.1) };
 
-		///<summary>Stores the single <see cref="VideoView"/> instance that plays sound.  At all times, exactly one instance may play sound.</summary>
-		static VideoView soundOwner;
 
-		public VideoView(Orchestrator orchestrator, string viewName, string directory) {
+		private VideoView(Orchestrator orchestrator, string viewName, IReadOnlyList<string> fileNamess) {
 			InitializeComponent();
 
 			this.viewName = viewName;
+			this.fileNames = fileNamess;
 			this.orchestrator = orchestrator;
 
-			fileNames = Directory.EnumerateFiles(directory)
-								 .Where(p => extensions.Contains(Path.GetExtension(p)))
-								 .OrderBy(p => p)
-								 .ToList();
-
 			Loaded += delegate {
-				player.IsMuted = soundOwner != null;
-				if (soundOwner == null) 
-					soundOwner = this;
-
 				Focus();
 				VideoIndex = 0;
-
-				// Force the player to render a frame.
-				player.Play();
-				player.Pause();
 			};
-			Unloaded += delegate {
-				if (soundOwner == this)
-					soundOwner = null;
-				IsPlaying = false;
-			};
-
-			player.MediaOpened += delegate {
-				if (!player.NaturalDuration.HasTimeSpan)
-					return;
-				trackBar.Maximum = player.NaturalDuration.TimeSpan.TotalSeconds;
-				duration.Content = player.NaturalDuration.TimeSpan.ToString(@"h\:mm\:ss");
-			};
-			player.MediaEnded += delegate {
-				SetState(videoIndex: videoIndex + 1, position: TimeSpan.Zero, isPlaying: false);
-			};
-
-			player.MediaFailed += (s, e) => MessageBox.Show(e.ErrorException.Message, "Video - NetPresenter", MessageBoxButton.OK, MessageBoxImage.Error);
-
 			trackBarTimer.Tick += delegate { UpdateTrackBar(); };
 		}
+
+		private void DisplayDuration(MediaElement player) {
+			if (!player.NaturalDuration.HasTimeSpan)
+				return;
+			trackBar.Maximum = player.NaturalDuration.TimeSpan.TotalSeconds;
+			duration.Content = player.NaturalDuration.TimeSpan.ToString(@"h\:mm\:ss");
+		}
+		private void SetPlayerContent(UIElement visual) {
+			Grid.SetRowSpan(visual, 2);
+			Grid.SetColumnSpan(visual, 3);
+			// Place the video behind the other UI.
+			grid.Children.Insert(0, visual);
+		}
+
 		public override string ViewName { get { return viewName; } }
 
 		public static readonly ISet<string> extensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
 			".avi", ".mp4", ".wmv"
 		};
 
-		public bool IsPlaying {
+		public virtual bool IsPlaying {
 			get { return trackBarTimer.IsEnabled; }
-			set {
-				trackBarTimer.IsEnabled = value;
-				if (value)
-					player.Play();
-				else
-					player.Pause();
-			}
+			set { trackBarTimer.IsEnabled = value; }
 		}
 
 		int videoIndex = -1;
@@ -95,12 +71,15 @@ namespace NetPresenter.Views {
 				if (videoIndex == value)
 					return;
 				videoIndex = (fileNames.Count + value) % fileNames.Count;
-
-				player.Source = new Uri(fileNames[videoIndex]);
-				videoName.Content = Path.GetFileNameWithoutExtension(fileNames[videoIndex]);
-				UpdateTrackBar();
+				SetVideo(fileNames[videoIndex]);
 			}
 		}
+		protected virtual void SetVideo(string filenName) {
+			videoName.Content = Path.GetFileNameWithoutExtension(filenName);
+			UpdateTrackBar();
+		}
+
+		public abstract TimeSpan Position { get; set; }
 
 		#region UI Handlers
 		private void ViewBase_PreviewKeyDown(object sender, KeyEventArgs e) {
@@ -126,10 +105,10 @@ namespace NetPresenter.Views {
 		void UpdateTrackBar() {
 			try {
 				isTrackBarUpdating = true;
-				trackBar.Value = player.Position.TotalSeconds;
+				trackBar.Value = Position.TotalSeconds;
 			} finally { isTrackBarUpdating = false; }
 
-			currentTime.Content = player.Position.ToString(@"h\:mm\:ss");
+			currentTime.Content = Position.ToString(@"h\:mm\:ss");
 		}
 		private void trackBar_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) {
 			if (!isTrackBarUpdating)
@@ -139,7 +118,7 @@ namespace NetPresenter.Views {
 
 		void SetState(int? videoIndex = null, TimeSpan? position = null, bool? isPlaying = null) {
 			orchestrator.BroadcastViewCommand(SetStateCommand,
-				videoIndex ?? VideoIndex, (position ?? player.Position).Ticks, isPlaying ?? IsPlaying);
+				videoIndex ?? VideoIndex, (position ?? Position).Ticks, isPlaying ?? IsPlaying);
 		}
 
 		const string SetStateCommand = "SetState";
@@ -147,7 +126,7 @@ namespace NetPresenter.Views {
 			switch (name) {
 				case SetStateCommand:
 					VideoIndex = parameters.ReadParameter<int>();
-					player.Position = TimeSpan.FromTicks(parameters.ReadParameter<long>());
+					Position = TimeSpan.FromTicks(parameters.ReadParameter<long>());
 					IsPlaying = parameters.ReadParameter<bool>();
 					UpdateTrackBar();
 					break;
@@ -155,6 +134,102 @@ namespace NetPresenter.Views {
 					MessageBox.Show("Unknown command: " + name);
 					break;
 			}
+		}
+
+		///<summary>A VideoView that creates and owns the <see cref="MediaElement"/> displaying the video.</summary>
+		class MasterView : VideoView {
+			public MediaElement Player { get; }
+
+			public MasterView(Orchestrator orchestrator, string viewName, string directory)
+				: base(orchestrator, viewName, GetVideos(directory)) {
+				Player = new MediaElement {
+					ScrubbingEnabled = true,
+					LoadedBehavior = MediaState.Manual,
+					UnloadedBehavior = MediaState.Manual,
+					Volume = 1
+				};
+				SetPlayerContent(Player);
+
+				Loaded += delegate {
+					// Force the player to render a frame.
+					Player.Play();
+					Player.Pause();
+				};
+				Unloaded += delegate {
+					IsPlaying = false;
+				};
+
+				Player.MediaOpened += delegate {
+					DisplayDuration(Player);
+				};
+				Player.MediaEnded += delegate {
+					SetState(videoIndex: videoIndex + 1, position: TimeSpan.Zero, isPlaying: false);
+				};
+
+				Player.MediaFailed += (s, e) => MessageBox.Show(e.ErrorException.Message, "Video - NetPresenter", MessageBoxButton.OK, MessageBoxImage.Error);
+			}
+
+			static IReadOnlyList<string> GetVideos(string directory) {
+				return Directory.EnumerateFiles(directory)
+								.Where(p => extensions.Contains(Path.GetExtension(p)))
+								.OrderBy(p => p)
+								.ToList();
+			}
+			protected override void SetVideo(string filenName) {
+				Player.Source = new Uri(fileNames[VideoIndex]);
+				base.SetVideo(filenName);
+			}
+
+			public override bool IsPlaying {
+				get { return base.IsPlaying; }
+				set {
+					base.IsPlaying = value;
+					if (value)
+						Player.Play();
+					else
+						Player.Pause();
+				}
+			}
+			public override TimeSpan Position {
+				get { return Player.Position; }
+				set { Player.Position = value; }
+			}
+		}
+
+		///<summary>A VideoView that mirrors the player from an existing <see cref="MasterView"/>.</summary>
+		class CloneView : VideoView {
+			readonly MediaElement ownerPlayer;
+
+			public CloneView(MasterView owner) : base(owner.orchestrator, owner.viewName, owner.fileNames) {
+				ownerPlayer = owner.Player;
+				ownerPlayer.MediaOpened += delegate {
+					DisplayDuration(ownerPlayer);
+				};
+
+				SetPlayerContent(new Border {
+					Background = new VisualBrush(ownerPlayer) { Stretch = Stretch.Uniform }
+				});
+			}
+
+
+			public override TimeSpan Position {
+				get { return ownerPlayer.Position; }
+				set { }     // Let the master view set the position; we don't need to do anything
+			}
+		}
+
+		public static ViewCommand CreateFactory(Orchestrator orchestrator, string directory) {
+			string viewName = "Videos: " + Path.GetFileName(directory);
+
+			MasterView master = null;
+
+			return new ViewCommand(orchestrator, viewName, o => {
+				if (master != null)
+					return new CloneView(master);
+				master = new MasterView(o, viewName, directory);
+				master.Unloaded += delegate { master = null; };
+				return master;
+			});
 		}
 	}
 }
