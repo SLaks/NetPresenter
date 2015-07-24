@@ -125,6 +125,9 @@ namespace NetPresenter {
 							else if (arg is int)
 								stream.WriteNumber((int)arg);
 
+							else if (arg is long)
+								stream.WriteNumber((long)arg);
+
 							else
 								throw new ArgumentException("Unsupported argument " + arg.GetType(), "args");
 						}
