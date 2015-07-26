@@ -80,11 +80,10 @@ namespace NetPresenter {
 				Log.Write("Not enabling multicast.  Network functionality will not work.");
 				return false;
 			}
-			Log.Write("Enabling multicast...");
-			Process.Start(new ProcessStartInfo(
-				"dism",
-				"/Online /Enable-Feature=MSMQ-Multicast /All"
-			) { Verb = "runas" }).WaitForExit();
+
+			const string flags = "/Online /Enable-Feature /FeatureName:MSMQ-Server /FeatureName:MSMQ-Container /FeatureName:MSMQ-Multicast";
+			Log.Write("Enabling multicast: dism " + flags);
+			Process.Start(new ProcessStartInfo("dism", flags) { Verb = "runas" }).WaitForExit();
 			return true;
 		}
 
