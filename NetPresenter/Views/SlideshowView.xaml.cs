@@ -95,6 +95,27 @@ namespace NetPresenter.Views {
 					LoadImage(file);
 				}
 			}
+
+			static Rotation GetRotation(string filename) {
+				BitmapFrame bitmapFrame = BitmapFrame.Create(new Uri(filename), BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
+				BitmapMetadata bitmapMetadata = bitmapFrame.Metadata as BitmapMetadata;
+
+				if (bitmapMetadata == null || !bitmapMetadata.ContainsQuery("System.Photo.Orientation"))
+					return Rotation.Rotate0;
+
+				//refer to http://www.impulseadventure.com/photo/exif-orientation.html for details on orientation values
+				switch (bitmapMetadata.GetQuery("System.Photo.Orientation") as ushort?) {
+					case 6:
+						return Rotation.Rotate90;
+					case 3:
+						return Rotation.Rotate180;
+					case 8:
+						return Rotation.Rotate270;
+					default:
+						return Rotation.Rotate0;
+				}
+			}
+
 			void LoadImage(string filename) {
 				if (loadedFiles.Contains(filename))
 					return;
@@ -103,6 +124,7 @@ namespace NetPresenter.Views {
 				image.BeginInit();
 				image.DecodePixelWidth = width;
 				image.UriSource = new Uri(filename, UriKind.Absolute);
+				image.Rotation = GetRotation(filename);
 				image.EndInit();
 				image.Freeze();
 
