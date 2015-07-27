@@ -66,6 +66,9 @@ namespace NetPresenter {
 		}
 
 		private void tree_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e) {
+			ExecuteSelected();
+		}
+		void ExecuteSelected() { 
 			var command = (ICommand)tree.SelectedItem;
 			if (!GetItem(command).IsMouseOver)
 				return;
@@ -93,6 +96,9 @@ namespace NetPresenter {
 
 		private void Window_KeyDown(object sender, KeyEventArgs e) {
 			switch (e.Key) {
+				case Key.Enter:
+					ExecuteSelected();
+					break;
 				case Key.Escape:
 					Close();
 					return;
