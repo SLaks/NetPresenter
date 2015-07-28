@@ -9,7 +9,7 @@
 	<Grid>
 		<Image Stretch="UniformToFill" Name="background" />
 		<Image Stretch="Uniform" StretchDirection="DownOnly" Name="foreground"
-			   Margin="40" VerticalAlignment="Top" />
+			   Margin="40" VerticalAlignment="Center" />
 		<Canvas Name="sparkleCanvas" />
 	</Grid>
 </np:ViewBase>
