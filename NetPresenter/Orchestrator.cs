@@ -33,12 +33,13 @@ namespace NetPresenter {
 			AvailableViews = new ViewCommandCollection(new[] {
 				TryCreateSingletonCommand("Intro", Views.IntroView.TryCreateFactory(@"Intro\")),
 				new ViewCommand(this, "Message", o => new Views.MessageView(o))
-			}.Concat(Directory.EnumerateDirectories(Environment.CurrentDirectory)
+			}.Concat(Directory.EnumerateDirectories(Environment.CurrentDirectory, "*", SearchOption.AllDirectories)
 							  .Where(d => !Path.GetFileName(d).Equals("Intro", StringComparison.OrdinalIgnoreCase)
 										&& Directory.EnumerateFiles(d, "*.jpg").Any())
+							  .Select(p => p.Substring(Environment.CurrentDirectory.Length).TrimStart('\\'))
 							  .Select(d => new ViewCommand(this,
-									"Photos: " + Path.GetFileName(d),
-									o => new Views.SlideshowView(o, "Photos: " + Path.GetFileName(d), d)
+									"Photos: " + d,
+									o => new Views.SlideshowView(o, "Photos: " + d, d)
 								))
 			).Concat(Directory.EnumerateDirectories(Environment.CurrentDirectory)
 							  .Where(d => Directory.EnumerateFiles(d)
